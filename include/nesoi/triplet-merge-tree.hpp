@@ -134,7 +134,7 @@ template<class Value, class Vertex>
 template<class F>
 void
 nesoi::TripletMergeTree<Value, Vertex>::
-traverse_persistence(const F& f)
+traverse_persistence(const F& f) const
 {
     for (Vertex u = 0; u < size(); ++u)
     {
