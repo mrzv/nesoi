@@ -2,7 +2,9 @@
 
 #include <vector>
 #include <cstdint>
+#if !defined(NESOI_NO_PARALLEL)
 #include <atomic>
+#endif
 
 namespace nesoi
 {
@@ -23,8 +25,14 @@ class TripletMergeTree
             bool    operator!=(const Edge& other) const     { return through != other.through || to != other.to; }
         };
 
+#if !defined(NESOI_NO_PARALLEL)
+        using AtomicEdge = std::atomic<Edge>;
+#else
+        using AtomicEdge = Edge;
+#endif
+
         using Function  = std::vector<Value>;
-        using Tree      = std::vector<std::atomic<Edge>>;
+        using Tree      = std::vector<AtomicEdge>;
 
     public:
                     TripletMergeTree()                      {}
@@ -69,6 +77,19 @@ class TripletMergeTree
 
         template<class F>
         void        for_each_vertex(const F& f) const;
+
+    private:
+        bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
+        {
+#if !defined(NESOI_NO_PARALLEL)
+            return e.compare_exchange_weak(expected, desired);
+#else
+            if (e != expected)
+                return false;
+            e = desired;
+            return true;
+#endif
+        }
 
     private:
         bool        negate_;
