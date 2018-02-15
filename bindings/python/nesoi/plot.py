@@ -4,10 +4,10 @@ def _triplet_values(tmt):
     for (u,s,v) in triplets:
         if u != v:
             if tmt.value(u) != tmt.value(s):        # skip 0-persistence
-                triplet_values.append((tmt.value(u) - tmt.value(s), tmt.value(u), tmt.value(s), tmt.value(v)))
+                triplet_values.append((tmt.value(u) - tmt.value(s), tmt.value(u), tmt.value(s), tmt.value(v), u))
         else:
             if tmt.value(u) != 0:
-                triplet_values.append((tmt.value(u), tmt.value(u), 0, tmt.value(v)))
+                triplet_values.append((tmt.value(u), tmt.value(u), 0, tmt.value(v), u))
     return triplet_values
 
 def plot_bars(tmt, show = False):
@@ -23,6 +23,8 @@ def plot_bars(tmt, show = False):
 
     if show:
         plt.show()
+
+    return [p[-1] for p in triplet_values]
 
 def plot_diagram(tmt, show = False):
     """Plot the persistence diagram."""
@@ -47,3 +49,4 @@ def plot_diagram(tmt, show = False):
     if show:
         plt.show()
 
+    return [p[-1] for p in triplet_values]

@@ -134,9 +134,55 @@ PyTMT build_tree(py::array a, double eps)
         throw std::runtime_error("Unknown input dimension: can only process 1D and 2D arrays");
 }
 
+std::map<Vertex, std::vector<Vertex>>
+clusters(const PyTMT& tmt, Degree k)
+{
+    std::vector<Vertex> s;
+    std::unordered_map<Vertex, Vertex> rep;
+    for (Vertex u = 0; u < tmt.size(); ++u)
+    {
+        Vertex x = u;
+        if (tmt.value(x) < k)
+            continue;
+
+        while (rep.find(x) == rep.end())
+        {
+            s.push_back(x);
+            Vertex s = tmt[x].through;
+            Vertex v = tmt[x].to;
+
+            if (x == v || tmt.value(s) < k)
+                break;
+            else
+                x = v;
+        }
+
+        if (s.empty())
+            continue;
+
+        Vertex v = x;
+        auto it = rep.find(x);
+        if (it != rep.end())
+            v = it->second;
+
+        for (Vertex x : s)
+            rep[x] = v;
+
+        s.clear();
+    }
+
+    std::map<Vertex, std::vector<Vertex>> clusters;
+    for (auto& x : rep)
+        clusters[x.second].push_back(x.first);
+
+    return clusters;
+}
+
 PYBIND11_MODULE(_nesoi, m)
 {
     m.doc() = "Nesoi python bindings";
+
+    using namespace pybind11::literals;
 
     py::class_<PyTMT>(m, "TMT", "triplet merge tree")
         .def("__len__",         &PyTMT::size,               "size of the tree")
@@ -154,9 +200,9 @@ PYBIND11_MODULE(_nesoi, m)
                                             tmt.traverse_persistence([&result](Vertex u, Vertex s, Vertex v) { result.emplace_back(u,s,v); });
                                             return result;
                                         },  "traverse persistence, return list of vertex triplets")
+        .def("clusters",        &clusters, "k"_a, "find all clusters at the given degree threshold")
     ;
 
-    using namespace pybind11::literals;
     m.def("build_tree",  &build_tree,
           "data"_a, "eps"_a,
           "returns the merge tree of the graph with respect to the degree function");
