@@ -7,4 +7,11 @@ else                        ()
     set                     (MODULE_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR})
 endif                       ()
 
-pybind11_add_module         (nesoi nesoi.cpp)
+file                        (MAKE_DIRECTORY "${MODULE_OUTPUT_DIRECTORY}/nesoi")
+file                        (GLOB NESOI_PYTHON "${CMAKE_CURRENT_SOURCE_DIR}/nesoi/*.py")
+add_custom_target           (nesoi ALL ${CMAKE_COMMAND} -E copy_directory
+                                       ${CMAKE_CURRENT_SOURCE_DIR}/nesoi ${MODULE_OUTPUT_DIRECTORY}/nesoi
+                                       DEPENDS ${NESOI_PYTHON})
+
+pybind11_add_module         (_nesoi nesoi.cpp)
+set_target_properties       (_nesoi PROPERTIES OUTPUT_NAME nesoi/_nesoi)

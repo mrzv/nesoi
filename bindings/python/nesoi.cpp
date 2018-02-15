@@ -134,7 +134,7 @@ PyTMT build_tree(py::array a, double eps)
         throw std::runtime_error("Unknown input dimension: can only process 1D and 2D arrays");
 }
 
-PYBIND11_MODULE(nesoi, m)
+PYBIND11_MODULE(_nesoi, m)
 {
     m.doc() = "Nesoi python bindings";
 
