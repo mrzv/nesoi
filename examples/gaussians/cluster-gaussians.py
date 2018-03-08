@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 #plt.scatter([p[0] for p in points], [p[1] for p in points])
 #plt.show()
 
-tmt = nesoi.build_tree(points, .7)
+tmt = nesoi.build_degree_tree(points, .7)
 #centers = nesoi.plot_bars(tmt, show = True)
 #print(centers)
 
