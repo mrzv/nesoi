@@ -71,10 +71,10 @@ template<class Value, class Vertex>
 template<class F>
 void
 nesoi::TripletMergeTree<Value, Vertex>::
-for_each_vertex(const F& f) const
+for_each_vertex(Vertex n, const F& f) const
 {
 #if defined(NESOI_NO_PARALLEL)
-    for (Vertex u = 0; u < size(); ++u)
+    for (Vertex u = 0; u < n; ++u)
         f(u);
 #else
     unsigned threads = std::thread::hardware_concurrency();
@@ -82,11 +82,11 @@ for_each_vertex(const F& f) const
     for (unsigned i = 0; i < threads; ++i)
     {
         handles.emplace_back(std::async(std::launch::async,
-                                        [i,threads,this,&f]()
+                                        [i,threads,this,n,&f]()
                                         {
-                                            size_t chunk = size() / threads;
+                                            size_t chunk = n / threads;
                                             Vertex b = chunk*i,
-                                                   e = (i == threads - 1 ? size() : chunk*(i+1));
+                                                   e = (i == threads - 1 ? n : chunk*(i+1));
                                             for (Vertex u = b; u < e; ++u)
                                                 f(u);
                                         }));

@@ -53,7 +53,13 @@ class TripletMergeTree
         void        link(Vertex u, Vertex s, Vertex v)      { tree_[u] = Edge {s,v}; }
         bool        cas_link(Vertex u,
                              Vertex os, Vertex ov,
-                             Vertex s,  Vertex v)           { auto op = Edge {os,ov}; auto p = Edge {s,v}; return tree_[u].compare_exchange_weak(op, p); }
+                             Vertex s,  Vertex v)
+#if !defined(NESOI_NO_PARALLEL)
+        { auto op = Edge {os,ov}; auto p = Edge {s,v}; return tree_[u].compare_exchange_weak(op, p); }
+#else
+        { tree_[u] = Edge {s,v}; return true; }             // NB: this is not technically CAS, but it's Ok in serial
+#endif
+
 
         Edge        repair(Vertex u);
         void        repair();
@@ -76,7 +82,10 @@ class TripletMergeTree
         Value       value(Vertex u) const                   { return function_[u]; }
 
         template<class F>
-        void        for_each_vertex(const F& f) const;
+        void        for_each_vertex(const F& f) const       { for_each_vertex(size(), f); }
+
+        template<class F>
+        void        for_each_vertex(Vertex n, const F& f) const;
 
     private:
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)

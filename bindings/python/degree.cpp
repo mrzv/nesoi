@@ -5,9 +5,14 @@
 namespace py = pybind11;
 
 #include <nesoi/kd-tree.h>
+#include <nesoi/triplet-merge-tree.h>
 
 #include "numpy-traits.h"
-#include "tmt.h"
+
+using PyTMT  = nesoi::TripletMergeTree<std::uint32_t, std::uint32_t>;
+using Vertex = PyTMT::Vertex;
+using Degree = PyTMT::Value;
+
 
 template<class T>
 struct ExplicitDistances
@@ -42,7 +47,7 @@ struct ExplicitDistances
 };
 
 template<class T>
-PyTMT build_tree_euclidean(py::array a, double eps)
+PyTMT build_degree_tree_euclidean(py::array a, double eps)
 {
     size_t n = a.shape()[0];
 
@@ -81,7 +86,7 @@ PyTMT build_tree_euclidean(py::array a, double eps)
 }
 
 template<class T>
-PyTMT build_tree_explicit(py::array a, double eps)
+PyTMT build_degree_tree_explicit(py::array a, double eps)
 {
     using Distances = ExplicitDistances<T>;
 
@@ -107,22 +112,22 @@ PyTMT build_tree_explicit(py::array a, double eps)
     return tmt;
 }
 
-PyTMT build_tree(py::array a, double eps)
+PyTMT build_degree_tree(py::array a, double eps)
 {
     if (a.ndim() == 2)
     {
         if (a.dtype().is(py::dtype::of<float>()))
-            return build_tree_euclidean<float>(a,eps);
+            return build_degree_tree_euclidean<float>(a,eps);
         else if (a.dtype().is(py::dtype::of<double>()))
-            return build_tree_euclidean<double>(a,eps);
+            return build_degree_tree_euclidean<double>(a,eps);
         else
             throw std::runtime_error("Unknown array dtype");
     } else if (a.ndim() == 1)
     {
         if (a.dtype().is(py::dtype::of<float>()))
-            return build_tree_explicit<float>(a,eps);
+            return build_degree_tree_explicit<float>(a,eps);
         else if (a.dtype().is(py::dtype::of<double>()))
-            return build_tree_explicit<double>(a,eps);
+            return build_degree_tree_explicit<double>(a,eps);
         else
             throw std::runtime_error("Unknown array dtype");
     } else
@@ -134,7 +139,7 @@ void init_degree_tree(py::module& m)
 {
     using namespace pybind11::literals;
 
-    m.def("build_degree_tree",  &build_tree,
+    m.def("build_degree_tree",  &build_degree_tree,
           "data"_a, "eps"_a,
           "returns the merge tree of the graph with respect to the degree function");
 }
