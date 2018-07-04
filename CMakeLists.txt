@@ -1,6 +1,9 @@
 project                     (Nesoi)
 cmake_minimum_required      (VERSION 3.1)
 
+# C++11
+set                         (CMAKE_CXX_STANDARD 11)
+
 option                      (parallel           "Build Nesoi with parallelization"         ON)
 
 # Default to Release
@@ -15,5 +18,6 @@ endif                       ()
 
 include_directories         (include)
 
+add_subdirectory            (examples)
 add_subdirectory            (bindings/python)
 
