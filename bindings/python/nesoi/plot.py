@@ -4,7 +4,7 @@ def _triplet_values(tmt):
     for (u,s,v) in triplets:
         if u != v:
             if tmt.value(u) != tmt.value(s):        # skip 0-persistence
-                triplet_values.append((tmt.value(u) - tmt.value(s), tmt.value(u), tmt.value(s), tmt.value(v), u))
+                triplet_values.append((abs(tmt.value(u) - tmt.value(s)), tmt.value(u), tmt.value(s), tmt.value(v), u))
         else:
             if tmt.value(u) != 0:
                 triplet_values.append((tmt.value(u), tmt.value(u), 0, tmt.value(v), u))

@@ -81,5 +81,6 @@ void init_tmt(py::module& m, std::string suffix)
                                             return result;
                                         },  "traverse persistence, return list of vertex triplets")
         .def("clusters",        &clusters<PyTMT>, "k"_a, "find all clusters at the given threshold")
+        .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
     ;
 }
