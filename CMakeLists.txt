@@ -14,6 +14,9 @@ endif                       (NOT CMAKE_BUILD_TYPE)
 
 if                          (NOT parallel)
     add_definitions         (-DNESOI_NO_PARALLEL)
+else                        ()
+    find_package            (Threads)
+    set                     (libraries ${libraries}     ${CMAKE_THREAD_LIBS_INIT})
 endif                       ()
 
 include_directories         (include)

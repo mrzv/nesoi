@@ -14,4 +14,5 @@ add_custom_target           (nesoi ALL ${CMAKE_COMMAND} -E copy_directory
                                        DEPENDS ${NESOI_PYTHON})
 
 pybind11_add_module         (_nesoi nesoi.cpp degree.cpp kdistance.cpp)
+target_link_libraries       (_nesoi PRIVATE ${libraries})
 set_target_properties       (_nesoi PROPERTIES OUTPUT_NAME nesoi/_nesoi)
