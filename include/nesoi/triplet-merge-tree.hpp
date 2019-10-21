@@ -1,5 +1,4 @@
-#include <future>
-#include <thread>
+#include "parallel.h"
 
 template<class Value, class Vertex>
 bool
@@ -73,27 +72,7 @@ void
 nesoi::TripletMergeTree<Value, Vertex>::
 for_each_vertex(Vertex n, const F& f) const
 {
-#if defined(NESOI_NO_PARALLEL)
-    for (Vertex u = 0; u < n; ++u)
-        f(u);
-#else
-    unsigned threads = std::thread::hardware_concurrency();
-    std::vector<std::future<void>> handles;
-    for (unsigned i = 0; i < threads; ++i)
-    {
-        handles.emplace_back(std::async(std::launch::async,
-                                        [i,threads,this,n,&f]()
-                                        {
-                                            size_t chunk = n / threads;
-                                            Vertex b = chunk*i,
-                                                   e = (i == threads - 1 ? n : chunk*(i+1));
-                                            for (Vertex u = b; u < e; ++u)
-                                                f(u);
-                                        }));
-    }
-
-    // handles' destructors make sure that everything runs
-#endif
+    for_each(n, f);
 }
 
 template<class Value, class Vertex>
