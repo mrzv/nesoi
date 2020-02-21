@@ -1,4 +1,5 @@
 #include <cmath>
+#include <chrono>
 
 #include <pybind11/pybind11.h>
 #include <pybind11/numpy.h>
@@ -53,6 +54,11 @@ PyTMT build_degree_tree_euclidean(py::array a, double eps)
 
     PyTMT tmt(n, true);
 
+    using clock = std::chrono::steady_clock;
+    using sec = std::chrono::duration<double>;
+
+    auto start = clock::now();
+
     // build k-d tree
     using Traits        = NumPyTraits<T>;
     using KDTree        = nesoi::KDTree<Traits>;
@@ -65,6 +71,9 @@ PyTMT build_degree_tree_euclidean(py::array a, double eps)
 
     Traits traits(a);
     KDTree kdtree(traits, std::move(handles));
+
+    std::cout << "Time to construct k-d tree: " << sec(clock::now() - start).count() << " seconds" << std::endl;
+    start = clock::now();
 
     // find neighbors
     tmt.for_each_vertex([&](Vertex u)
@@ -81,6 +90,8 @@ PyTMT build_degree_tree_euclidean(py::array a, double eps)
                             }
                         });
     tmt.repair();
+
+    std::cout << "Time to build TMT: " << sec(clock::now() - start).count() << " seconds" << std::endl;
 
     return tmt;
 }
