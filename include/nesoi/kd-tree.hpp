@@ -1,6 +1,13 @@
 #include <queue>
 #include <stack>
 
+#if !defined(NESOI_NO_PARALLEL)
+#include <thread>
+#include <future>
+#endif
+
+#include <iostream>
+
 template<class T>
 nesoi::KDTree<T>::
 KDTree(const Traits& traits, HandleContainer&& handles):
@@ -40,6 +47,51 @@ init()
                 e = tree_.end();
     size_t      i = 0;
 
+#if defined(NESOI_NO_PARALLEL)
+    sort_all(b,e,i);
+#else
+    unsigned threads = std::thread::hardware_concurrency();
+    std::cout << "Building k-d tree using " << threads << " threads" << std::endl;
+    sort_all_threads(b,e,i,threads);
+#endif
+}
+
+template<class T>
+void
+nesoi::KDTree<T>::
+sort_all_threads(HCIterator b, HCIterator e, size_t i, unsigned threads)
+{
+    if (threads == 1)
+    {
+        sort_all(b,e,i);
+        return;
+    }
+
+    HCIterator m = sort(b,e,i);
+
+    size_t next_i = (i + 1) % traits().dimension();
+
+    std::vector<std::future<void>> handles;
+    if (b < m - 1)
+        handles.emplace_back(std::async(std::launch::async,
+                                        [this,b,m,e,next_i,threads]()
+                                        {
+                                            sort_all_threads(b,m,next_i,threads/2);
+                                        }));
+    if (e - m > 2)
+        handles.emplace_back(std::async(std::launch::async,
+                                        [this,b,m,e,next_i,threads]()
+                                        {
+                                            sort_all_threads(m+1,e,next_i,threads - threads/2);
+                                        }));
+}
+
+
+template<class T>
+void
+nesoi::KDTree<T>::
+sort_all(HCIterator b, HCIterator e, size_t i)
+{
     std::queue<KDTreeNode> q;
     q.push(KDTreeNode(b,e,i));
     while (!q.empty())
@@ -47,16 +99,26 @@ init()
         HCIterator b, e; size_t i;
         std::tie(b,e,i) = q.front();
         q.pop();
-        HCIterator m = b + (e - b)/2;
 
-        CoordinateComparison cmp(i, traits());
-        std::nth_element(b,m,e, cmp);
+        HCIterator m = sort(b,e,i);
+
         size_t next_i = (i + 1) % traits().dimension();
 
         // Replace with a size condition instead?
         if (b < m - 1)  q.push(KDTreeNode(b,   m, next_i));
         if (e - m > 2)  q.push(KDTreeNode(m+1, e, next_i));
     }
+}
+
+template<class T>
+typename nesoi::KDTree<T>::HCIterator
+nesoi::KDTree<T>::
+sort(HCIterator b, HCIterator e, size_t i)
+{
+    HCIterator m = b + (e - b)/2;
+    CoordinateComparison cmp(i, traits());
+    std::nth_element(b,m,e, cmp);
+    return m;
 }
 
 template<class T>

@@ -51,6 +51,10 @@ namespace nesoi
             using HCIterator = typename HandleContainer::iterator;
             using KDTreeNode = std::tuple<HCIterator, HCIterator, size_t>;
 
+            void            sort_all(HCIterator b, HCIterator e, size_t i);
+            void            sort_all_threads(HCIterator b, HCIterator e, size_t i, unsigned threads);
+            HCIterator      sort(HCIterator b, HCIterator e, size_t i);
+
             struct CoordinateComparison;
             struct OrderTree;
 
