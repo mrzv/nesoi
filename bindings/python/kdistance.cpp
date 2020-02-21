@@ -8,7 +8,8 @@ namespace py = pybind11;
 #include "numpy-traits.h"
 #include "barycenters.h"
 
-using PyTMT  = nesoi::TripletMergeTree<float, std::uint64_t>;
+//using PyTMT  = nesoi::TripletMergeTree<float, std::uint64_t>;
+using PyTMT  = nesoi::TripletMergeTree<float, std::uint32_t>;
 using Vertex = PyTMT::Vertex;
 using Degree = PyTMT::Value;
 

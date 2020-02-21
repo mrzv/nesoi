@@ -13,7 +13,8 @@ PYBIND11_MODULE(_nesoi, m)
     init_tmt<std::uint32_t, std::uint32_t>(m, "_uint32");
     init_degree_tree(m);
 
-    init_tmt<float, std::uint64_t>(m, "_float");
+    //init_tmt<float, std::uint64_t>(m, "_float");
+    init_tmt<float, std::uint32_t>(m, "_float");
     init_kdistance_tree(m);
 }
 
