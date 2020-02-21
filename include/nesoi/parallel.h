@@ -10,13 +10,14 @@ namespace nesoi
 {
 
 template<class T, class F>
-void for_each(T n, const F& f)
+void for_each(T n, const F& f, unsigned threads = 0)
 {
 #if defined(NESOI_NO_PARALLEL)
     for (T u = 0; u < n; ++u)
         f(u);
 #else
-    unsigned threads = std::thread::hardware_concurrency();
+    if (!threads)
+        threads = std::thread::hardware_concurrency();
     std::vector<std::future<void>> handles;
     for (unsigned i = 0; i < threads; ++i)
     {
