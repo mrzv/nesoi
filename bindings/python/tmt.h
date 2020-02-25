@@ -70,6 +70,7 @@ void init_tmt(py::module& m, std::string suffix)
         .def("__len__",         &PyTMT::size,               "size of the tree")
         .def("__contains__",    &PyTMT::contains,           "test whether the tree contains the vertex")
         .def("add",             &PyTMT::add,                "add a vertex to the tree")
+        .def("link",            &PyTMT::link,               "add a triplet (u,s,v) to the tree")
         .def("merge",           [](PyTMT& tmt, Vertex u, Vertex v)
                                 {
                                     tmt.merge(u, v);

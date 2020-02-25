@@ -51,7 +51,7 @@ init()
     sort_all(b,e,i);
 #else
     unsigned threads = std::thread::hardware_concurrency();
-    std::cout << "Building k-d tree using " << threads << " threads" << std::endl;
+    std::cerr << "Building k-d tree using " << threads << " threads" << std::endl;
     sort_all_threads(b,e,i,threads);
 #endif
 }

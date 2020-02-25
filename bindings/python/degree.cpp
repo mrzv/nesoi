@@ -72,7 +72,7 @@ PyTMT build_degree_tree_euclidean(py::array a, double eps)
     Traits traits(a);
     KDTree kdtree(traits, std::move(handles));
 
-    std::cout << "Time to construct k-d tree: " << sec(clock::now() - start).count() << " seconds" << std::endl;
+    std::cerr << "Time to construct k-d tree: " << sec(clock::now() - start).count() << " seconds" << std::endl;
     start = clock::now();
 
     // find neighbors
@@ -91,7 +91,7 @@ PyTMT build_degree_tree_euclidean(py::array a, double eps)
                         });
     tmt.repair();
 
-    std::cout << "Time to build TMT: " << sec(clock::now() - start).count() << " seconds" << std::endl;
+    std::cerr << "Time to build TMT: " << sec(clock::now() - start).count() << " seconds" << std::endl;
 
     return tmt;
 }
