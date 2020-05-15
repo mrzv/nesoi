@@ -56,6 +56,7 @@ init()
 #endif
 }
 
+#if !defined(NESOI_NO_PARALLEL)
 template<class T>
 void
 nesoi::KDTree<T>::
@@ -85,6 +86,7 @@ sort_all_threads(HCIterator b, HCIterator e, size_t i, unsigned threads)
                                             sort_all_threads(m+1,e,next_i,threads - threads/2);
                                         }));
 }
+#endif
 
 
 template<class T>
