@@ -4,7 +4,7 @@ cmake_minimum_required      (VERSION 3.1)
 # C++11
 set                         (CMAKE_CXX_STANDARD 11)
 
-option                      (parallel           "Build Nesoi with parallelization"         ON)
+option                      (NESOI_PARALLEL           "Build Nesoi with parallelization"         ON)
 
 # Default to Release
 if                          (NOT CMAKE_BUILD_TYPE)
@@ -12,7 +12,7 @@ if                          (NOT CMAKE_BUILD_TYPE)
     set_property            (CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
 endif                       (NOT CMAKE_BUILD_TYPE)
 
-if                          (NOT parallel)
+if                          (NOT NESOI_PARALLEL)
     add_definitions         (-DNESOI_NO_PARALLEL)
 else                        ()
     find_package            (Threads)
