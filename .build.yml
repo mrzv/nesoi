@@ -6,6 +6,7 @@ triggers:
 packages:
   - cmake
   - python
+  - python-pip
 secrets:
   - 51347cbf-5b71-4861-9b85-f92b6deb93b7
 sources:
@@ -18,3 +19,5 @@ tasks:
   - build: |
       cd nesoi/build
       make
+  - python: |
+      pip install --user --verbose `pwd`/nesoi
