@@ -69,6 +69,11 @@ void init_tmt(py::module& m, std::string suffix)
         .def(py::init<size_t, bool>())
         .def("__len__",         &PyTMT::size,               "size of the tree")
         .def("__contains__",    &PyTMT::contains,           "test whether the tree contains the vertex")
+        .def("__getitem__",     [](PyTMT& tmt, Vertex u)
+                                {
+                                    auto e = tmt[u];
+                                    return std::make_pair(e.through, e.to);
+                                },                          "return the label on the edge out of e")
         .def("add",             &PyTMT::add,                "add a vertex to the tree")
         .def("link",            &PyTMT::link,               "add a triplet (u,s,v) to the tree")
         .def("merge",           [](PyTMT& tmt, Vertex u, Vertex v)
