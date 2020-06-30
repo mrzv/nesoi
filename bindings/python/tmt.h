@@ -111,21 +111,18 @@ void init_tmt(py::module& m, std::string suffix)
                                 {
                                     py::buffer_info buf = values.request();
                                     if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
-
-                                    //auto vp = values.unchecked();
-
-                                    //for(size_t v = 0; v < vp.shape(0); ++v) {
-                                    //    std::cerr << "Adding value " << vp(v) << std::endl;
-                                    //    tmt.add(v, vp(v));
-                                    //}
+                                    Value* val_ptr = (Value*) (buf.ptr);
+                                    return tmt.simplify(edges, val_ptr, epsilon, negate);
+                                }, "simplify function on graph")
+        .def("simplify_ls",     [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, Value level_value, bool negate)
+                                {
+                                    py::buffer_info buf = values.request();
+                                    if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
 
                                     Value* val_ptr = (Value*) (buf.ptr);
 
-                                    return tmt.simplify(edges, val_ptr, epsilon, negate);
-                                }, "simplify function on graph")
-        //void        simplify_level_set(py::array_t<Value>&  values, Value level_value, Value epsilon, bool negate);
-        //void        rep_for_simplify(py::array_t<Value>&  values, Value epsilon, bool negate);
-        //void        rep_for_simplify_level_set(py::array_t<Value>&  values, Value level_value, Value epsilon, bool negate);
+                                    return tmt.simplify(edges, val_ptr, epsilon, level_value, negate);
+                                }, "simplify level set of function on graph")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
         .def(py::pickle(
             [](const PyTMT& tmt)        // __getstate__
