@@ -144,3 +144,92 @@ traverse_persistence(const F& f) const
         if (u != s || u == v) f(u, s, v);
     }
 }
+
+template<class Value, class Vertex>
+void
+nesoi::TripletMergeTree<Value, Vertex>::
+compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, bool negate)
+{
+    for(size_t v = 0; v < size(); ++v) {
+        add(v, val_ptr[v]);
+    }
+    for(const auto& e : edges) {
+        merge(std::get<0>(e), std::get<1>(e));
+    }
+    repair();
+}
+
+
+template<class Value, class Vertex>
+void
+nesoi::TripletMergeTree<Value, Vertex>::
+cache_all_reps(Value epsilon)
+{
+    for(auto& v : cache_)
+        v = static_cast<Vertex>(-1);
+
+    for(Vertex u = 0; u < size(); ++u) {
+        cache_[u] = simplification_repr(u, epsilon);
+    }
+}
+
+template<class Value, class Vertex>
+void
+nesoi::TripletMergeTree<Value, Vertex>::
+cache_all_reps(Value epsilon, Value level_value)
+{
+    for(auto& v : cache_)
+        v = static_cast<Vertex>(-1);
+
+    for(Vertex u = 0; u < size(); ++u) {
+        cache_[u] = simplification_repr(u, epsilon, level_value);
+    }
+}
+
+
+template<class Value, class Vertex>
+Vertex
+nesoi::TripletMergeTree<Value, Vertex>::
+simplification_repr(Vertex u, Value epsilon)
+{
+    if (cache_[u] != static_cast<Vertex>(-1))
+        return cache_[u];
+
+    Edge    sv = tree_[u];
+    Vertex  s = sv.through, v = sv.to, result;
+
+    if (u == v) {                                                // root
+        result = u;
+    } else if (fabs(function_[s] - function_[u]) >= epsilon) {   // persistent
+        result = u;
+    } else {
+        Vertex vr = simplification_repr(v, epsilon);
+        if (vr == v)                                             // terminal, use saddle
+            result = s;
+        else                                                     // otherwise use parent's rep
+            result = vr;
+    }
+    cache_[u] = result;
+
+    return result;
+}
+
+
+template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+Function
+nesoi::TripletMergeTree<Value, Vertex>::
+simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate)
+{
+    Function simplified = function_;
+    compute_mt(edges, val_ptr, negate);
+    cache_all_reps(epsilon);
+
+    for_each_vertex([&simplified, this](Vertex u) {
+        simplified[u] = this->function_[this->cache_[u]];
+    });
+
+    return simplified;
+}
+
+

@@ -31,14 +31,16 @@ class TripletMergeTree
         using AtomicEdge = Edge;
 #endif
 
-        using Function  = std::vector<Value>;
-        using Tree      = std::vector<AtomicEdge>;
+        using Function   = std::vector<Value>;
+        using Tree       = std::vector<AtomicEdge>;
+        using IndexCache = std::vector<Vertex>;
 
     public:
                     TripletMergeTree()                      {}
                     TripletMergeTree(size_t size, bool negate = false):
                         negate_(negate),
                         function_(size),
+                        cache_(size),
                         tree_(size)                         { for (auto& e : tree_) e = dummy(); }
 
         // no copy because of std::atomic<...> in tree_
@@ -87,6 +89,9 @@ class TripletMergeTree
         template<class F>
         void        for_each_vertex(Vertex n, const F& f) const;
 
+        void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, bool negate);
+
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate);
     private:
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
         {
@@ -100,9 +105,15 @@ class TripletMergeTree
 #endif
         }
 
+        void        cache_all_reps(Value epsilon);
+        void        cache_all_reps(Value epsilon, Value level_value);
+        Vertex      simplification_repr(Vertex u, Value epsilon);
+        Vertex      simplification_repr(Vertex u, Value epsilon, Value level_value);
+
     private:
         bool        negate_;
         Function    function_;
+        IndexCache  cache_;
         Tree        tree_;
 };
 

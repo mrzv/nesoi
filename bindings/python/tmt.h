@@ -4,6 +4,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 namespace py = pybind11;
 
 #include <nesoi/triplet-merge-tree.h>
@@ -63,6 +64,7 @@ void init_tmt(py::module& m, std::string suffix)
     using PyTMT  = nesoi::TripletMergeTree<Value_, Vertex_>;
     using Vertex = typename PyTMT::Vertex;
     using Value  = typename PyTMT::Value;
+    using EdgeVector = typename std::vector<std::tuple<Vertex, Vertex>>;
 
     std::string classname = "TMT" + suffix;
     py::class_<PyTMT>(m, classname.c_str(), "triplet merge tree")
@@ -94,6 +96,24 @@ void init_tmt(py::module& m, std::string suffix)
                                             return result;
                                         },  "traverse persistence, return list of vertex triplets")
         .def("clusters",        &clusters<PyTMT>, "k"_a, "find all clusters at the given threshold")
+        .def("compute_mt",      [](PyTMT& tmt, const EdgeVector& edges, py::array_t<Value> values, bool negate)
+                                {
+                                    tmt.set_negate(negate);
+                                    py::buffer_info buf = values.request();
+                                    if (buf.ndim != 1)
+                                        throw std::runtime_error("Expected 1D array");
+                                    if (buf.size != edges.size())
+                                        throw std::runtime_error("Array size and graph size do not match.");
+                                    Value* val_ptr = (Value*) (values.ptr());
+                                    tmt.compute_mt(edges, val_ptr, negate);
+                                }, "compute merge tree")
+        .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, bool negate)
+                                {
+                                    py::buffer_info buf = values.request();
+                                    if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
+                                    Value* val_ptr = (Value*) (buf.ptr);
+                                    return tmt.simplify(edges, val_ptr, epsilon, negate);
+                                }, "simplify function on graph")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
         .def(py::pickle(
             [](const PyTMT& tmt)        // __getstate__
