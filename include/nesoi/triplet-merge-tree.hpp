@@ -182,10 +182,71 @@ cache_all_reps(Value epsilon, Value level_value)
         v = static_cast<Vertex>(-1);
 
     for(Vertex u = 0; u < size(); ++u) {
-        cache_[u] = simplification_repr(u, epsilon, level_value);
+        cache_simplification_repr(u, epsilon, level_value);
     }
 }
 
+
+template<class Value, class Vertex>
+void
+nesoi::TripletMergeTree<Value, Vertex>::
+cache_simplification_repr(Vertex u, Value epsilon, Value level_value)
+{
+    if (cache_[u] != static_cast<Vertex>(-1))
+        return;
+
+    Edge    sv = tree_[u];
+    Vertex  s = sv.through, v = sv.to, result;
+
+    std::vector<Vertex> intermediate;
+    bool definitely_immovable = false;
+    bool passed_movable = false;
+
+    while(true) {
+        bool crossed_level;
+        if (negate())
+            crossed_level = (function_[u] >= level_value) && (level_value >= function_[s]);
+        else {
+            crossed_level = (function_[u] <= level_value) && (level_value <= function_[s]);
+        }
+
+        passed_movable = passed_movable || (crossed_level && (fabs(function_[s] - function_[u]) < epsilon) && (u != v));
+
+        // either persistent or root
+        definitely_immovable = ((fabs(function_[s] - function_[u]) >= epsilon) || (u == v));
+        if (definitely_immovable) {
+            // if u was root, keep it
+            if (intermediate.empty()) {
+                intermediate.push_back(u);
+            }
+            break;
+        } else {
+            // store branch (u, s) in intermediate
+            // and continue recursively with v
+            intermediate.push_back(u);
+            intermediate.push_back(s);
+
+            u = v;
+            sv = tree_[u];
+            s = sv.through;
+            v = sv.to;
+        }
+    }
+
+    if (intermediate.empty())
+        throw std::runtime_error("No intermediate nodes found");
+
+    for(Vertex v : intermediate) {
+        if (passed_movable) {
+            // last saddle with maximal value will be at the end of
+            // intermediate
+            cache_[v] = intermediate.back();
+        } else {
+            // all vertices remain unchanged
+            cache_[v] = v;
+        }
+    }
+}
 
 template<class Value, class Vertex>
 Vertex
@@ -232,4 +293,19 @@ simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Va
     return simplified;
 }
 
+template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+Function
+nesoi::TripletMergeTree<Value, Vertex>::
+simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
+{
+    Function simplified = function_;
+    compute_mt(edges, val_ptr, negate);
+    cache_all_reps(epsilon, level_value);
 
+    for_each_vertex([&simplified, this](Vertex u) {
+        simplified[u] = this->function_[this->cache_[u]];
+    });
+
+    return simplified;
+}

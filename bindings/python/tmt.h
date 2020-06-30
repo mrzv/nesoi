@@ -114,6 +114,15 @@ void init_tmt(py::module& m, std::string suffix)
                                     Value* val_ptr = (Value*) (buf.ptr);
                                     return tmt.simplify(edges, val_ptr, epsilon, negate);
                                 }, "simplify function on graph")
+        .def("simplify_ls",     [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, Value level_value, bool negate)
+                                {
+                                    py::buffer_info buf = values.request();
+                                    if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
+
+                                    Value* val_ptr = (Value*) (buf.ptr);
+
+                                    return tmt.simplify(edges, val_ptr, epsilon, level_value, negate);
+                                }, "simplify level set of function on graph")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
         .def(py::pickle(
             [](const PyTMT& tmt)        // __getstate__

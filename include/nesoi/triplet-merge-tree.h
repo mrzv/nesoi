@@ -92,6 +92,7 @@ class TripletMergeTree
         void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, bool negate);
 
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate);
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, Value level_value, bool negate);
     private:
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
         {
@@ -108,7 +109,7 @@ class TripletMergeTree
         void        cache_all_reps(Value epsilon);
         void        cache_all_reps(Value epsilon, Value level_value);
         Vertex      simplification_repr(Vertex u, Value epsilon);
-        Vertex      simplification_repr(Vertex u, Value epsilon, Value level_value);
+        void        cache_simplification_repr(Vertex u, Value epsilon, Value level_value);
 
     private:
         bool        negate_;
