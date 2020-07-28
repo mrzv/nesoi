@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include <cstdint>
 #if !defined(NESOI_NO_PARALLEL)
 #include <atomic>
@@ -26,14 +27,15 @@ class TripletMergeTree
         };
 
 #if !defined(NESOI_NO_PARALLEL)
-        using AtomicEdge = std::atomic<Edge>;
+        using AtomicEdge   = std::atomic<Edge>;
 #else
-        using AtomicEdge = Edge;
+        using AtomicEdge   = Edge;
 #endif
 
-        using Function   = std::vector<Value>;
-        using Tree       = std::vector<AtomicEdge>;
-        using IndexCache = std::vector<Vertex>;
+        using Function     = std::vector<Value>;
+        using Tree         = std::vector<AtomicEdge>;
+        using IndexArray   = std::vector<Vertex>;
+        using IndexDiagram = std::vector<std::pair<Vertex, Vertex>>;
 
     public:
                     TripletMergeTree()                      {}
@@ -93,6 +95,10 @@ class TripletMergeTree
 
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate);
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, Value level_value, bool negate);
+
+        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate);
+        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate);
+
     private:
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
         {
@@ -111,10 +117,12 @@ class TripletMergeTree
         Vertex      simplification_repr(Vertex u, Value epsilon);
         void        cache_simplification_repr(Vertex u, Value epsilon, Value level_value);
 
+
+
     private:
         bool        negate_;
         Function    function_;
-        IndexCache  cache_;
+        IndexArray  cache_;
         Tree        tree_;
 };
 

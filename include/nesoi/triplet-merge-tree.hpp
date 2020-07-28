@@ -309,3 +309,50 @@ simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Va
 
     return simplified;
 }
+
+
+template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+IndexDiagram
+nesoi::TripletMergeTree<Value, Vertex>::
+noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate)
+{
+    IndexDiagram result;
+
+    compute_mt(edges, val_ptr, negate);
+    for_each_vertex([&](Vertex u) {
+        Edge    sv = tree_[u];
+        Vertex  s = sv.through, v = sv.to;
+        Value   val_s = val_ptr[s], val_u = val_ptr[u];
+        bool    short_branch = fabs(val_s - val_u) < epsilon;
+
+        if (s != u && short_branch)
+            result.emplace_back(u, s);
+    });
+
+    return result;
+}
+
+
+template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+IndexDiagram
+nesoi::TripletMergeTree<Value, Vertex>::
+noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
+{
+    IndexDiagram result;
+
+    compute_mt(edges, val_ptr, negate);
+    for_each_vertex([&](Vertex u) {
+        Edge    sv = tree_[u];
+        Vertex  s = sv.through, v = sv.to;
+        Value   val_s = val_ptr[s], val_u = val_ptr[u];
+        bool    intersects_level_set = (val_s <= level_value && level_value <= val_u) || (val_u <= level_value && level_value <= val_s);
+        bool    short_branch = fabs(val_s - val_u) < epsilon;
+
+        if (s != u && intersects_level_set && short_branch)
+            result.emplace_back(u, s);
+    });
+
+    return result;
+}
