@@ -107,12 +107,12 @@ void init_tmt(py::module& m, std::string suffix)
                                     Value* val_ptr = (Value*) (values.ptr());
                                     tmt.compute_mt(edges, val_ptr, negate);
                                 }, "compute merge tree")
-        .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, bool negate)
+        .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, bool negate, bool squash_root)
                                 {
                                     py::buffer_info buf = values.request();
                                     if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
                                     Value* val_ptr = (Value*) (buf.ptr);
-                                    return tmt.simplify(edges, val_ptr, epsilon, negate);
+                                    return tmt.simplify(edges, val_ptr, epsilon, negate, squash_root);
                                 }, "simplify function on graph")
         .def("simplify_ls",     [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, Value level_value, bool negate)
                                 {
@@ -130,16 +130,16 @@ void init_tmt(py::module& m, std::string suffix)
 
                                     Value* val_ptr = (Value*) (buf.ptr);
 
-                                    return tmt.noise_diagram_points(edges, val_ptr, epsilon, level_value, negate);
-                                }, "return noisy part of 0-th persistence diagram")
-        .def("noise_points",    [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, bool negate)
+                                    return tmt.noise_diagram_points_ls(edges, val_ptr, epsilon, level_value, negate);
+                                }, "return noisy part of 0-th persistence diagram for level set")
+        .def("noise_points",    [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, bool negate, bool squash_root)
                                 {
                                     py::buffer_info buf = values.request();
                                     if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
 
                                     Value* val_ptr = (Value*) (buf.ptr);
 
-                                    return tmt.noise_diagram_points(edges, val_ptr, epsilon, negate);
+                                    return tmt.noise_diagram_points(edges, val_ptr, epsilon, negate, squash_root);
                                 }, "return noisy part of 0-th persistence diagram")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
         .def(py::pickle(

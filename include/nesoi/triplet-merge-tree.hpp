@@ -163,13 +163,13 @@ compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, 
 template<class Value, class Vertex>
 void
 nesoi::TripletMergeTree<Value, Vertex>::
-cache_all_reps(Value epsilon)
+cache_all_reps(Value epsilon, bool squash_root)
 {
     for(auto& v : cache_)
         v = static_cast<Vertex>(-1);
 
     for(Vertex u = 0; u < size(); ++u) {
-        cache_[u] = simplification_repr(u, epsilon);
+        cache_[u] = simplification_repr(u, epsilon, squash_root);
     }
 }
 
@@ -248,23 +248,27 @@ cache_simplification_repr(Vertex u, Value epsilon, Value level_value)
     }
 }
 
+
 template<class Value, class Vertex>
 Vertex
 nesoi::TripletMergeTree<Value, Vertex>::
-simplification_repr(Vertex u, Value epsilon)
+simplification_repr(Vertex u, Value epsilon, bool squash_root)
 {
-    if (cache_[u] != static_cast<Vertex>(-1))
+    if (cache_[u] != dummy_vertex())
         return cache_[u];
 
     Edge    sv = tree_[u];
     Vertex  s = sv.through, v = sv.to, result;
 
     if (u == v) {                                                // root
-        result = u;
-    } else if (fabs(function_[s] - function_[u]) >= epsilon) {   // persistent
+        if (squash_root && value(u) <= epsilon)
+            result = dummy_vertex_2();
+        else
+            result = u;
+    } else if (fabs(value(s) - value(u)) >= epsilon) {   // persistent
         result = u;
     } else {
-        Vertex vr = simplification_repr(v, epsilon);
+        Vertex vr = simplification_repr(v, epsilon, squash_root);
         if (vr == v)                                             // terminal, use saddle
             result = s;
         else                                                     // otherwise use parent's rep
@@ -280,15 +284,30 @@ template<class Value, class Vertex>
 typename nesoi::TripletMergeTree<Value, Vertex>::
 Function
 nesoi::TripletMergeTree<Value, Vertex>::
-simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate)
+simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root)
 {
-    Function simplified = function_;
-    compute_mt(edges, val_ptr, negate);
-    cache_all_reps(epsilon);
+    if (squash_root && !negate) {
+        std::cerr << "squash_root requirese negate=True" << std::endl;
+        throw std::runtime_error("squash_root requires negate=True");
+    }
 
-    for_each_vertex([&simplified, this](Vertex u) {
-        simplified[u] = this->function_[this->cache_[u]];
-    });
+    Function simplified = function_;
+
+    compute_mt(edges, val_ptr, negate);
+
+    cache_all_reps(epsilon, squash_root);
+
+    if (squash_root)
+        for_each_vertex([&simplified, this](Vertex u) {
+            if (this->cache_[u] != dummy_vertex_2())
+                simplified[u] = this->function_[this->cache_[u]];
+            else
+                simplified[u] = 0;
+        });
+    else
+        for_each_vertex([&simplified, this](Vertex u) {
+            simplified[u] = this->function_[this->cache_[u]];
+        });
 
     return simplified;
 }
@@ -315,18 +334,22 @@ template<class Value, class Vertex>
 typename nesoi::TripletMergeTree<Value, Vertex>::
 IndexDiagram
 nesoi::TripletMergeTree<Value, Vertex>::
-noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate)
+noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root)
 {
+    if (squash_root && !negate) {
+        std::cerr << "squash_root requirese negate=True" << std::endl;
+        throw std::runtime_error("squash_root requires negate=True");
+    }
+
     IndexDiagram result;
 
     compute_mt(edges, val_ptr, negate);
     for_each_vertex([&](Vertex u) {
         Edge    sv = tree_[u];
         Vertex  s = sv.through, v = sv.to;
-        Value   val_s = val_ptr[s], val_u = val_ptr[u];
-        bool    short_branch = fabs(val_s - val_u) < epsilon;
+        bool    short_branch = fabs(value(s) - value(u)) < epsilon;
 
-        if (s != u && short_branch)
+        if (short_branch && (s != u || (squash_root && s == u && v == u)))
             result.emplace_back(u, s);
     });
 
@@ -338,7 +361,7 @@ template<class Value, class Vertex>
 typename nesoi::TripletMergeTree<Value, Vertex>::
 IndexDiagram
 nesoi::TripletMergeTree<Value, Vertex>::
-noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
+noise_diagram_points_ls(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
 {
     IndexDiagram result;
 
@@ -346,7 +369,7 @@ noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value*
     for_each_vertex([&](Vertex u) {
         Edge    sv = tree_[u];
         Vertex  s = sv.through, v = sv.to;
-        Value   val_s = val_ptr[s], val_u = val_ptr[u];
+        Value   val_s = value(s), val_u = value(u);
         bool    intersects_level_set = (val_s <= level_value && level_value <= val_u) || (val_u <= level_value && level_value <= val_s);
         bool    short_branch = fabs(val_s - val_u) < epsilon;
 

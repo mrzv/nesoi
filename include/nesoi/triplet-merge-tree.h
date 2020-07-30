@@ -93,13 +93,18 @@ class TripletMergeTree
 
         void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, bool negate);
 
-        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate);
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate, bool squash_root);
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, Value level_value, bool negate);
 
-        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate);
-        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate);
+        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root);
+        IndexDiagram noise_diagram_points_ls(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate);
 
     private:
+
+
+        Vertex      dummy_vertex() const                    { return static_cast<Vertex>(-1); }
+        Vertex      dummy_vertex_2() const                  { return static_cast<Vertex>(-2); }
+
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
         {
 #if !defined(NESOI_NO_PARALLEL)
@@ -112,9 +117,9 @@ class TripletMergeTree
 #endif
         }
 
-        void        cache_all_reps(Value epsilon);
+        void        cache_all_reps(Value epsilon, bool squash_root);
         void        cache_all_reps(Value epsilon, Value level_value);
-        Vertex      simplification_repr(Vertex u, Value epsilon);
+        Vertex      simplification_repr(Vertex u, Value epsilon, bool squash_root);
         void        cache_simplification_repr(Vertex u, Value epsilon, Value level_value);
 
 
