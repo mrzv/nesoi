@@ -36,6 +36,8 @@ class TripletMergeTree
         using Tree         = std::vector<AtomicEdge>;
         using IndexArray   = std::vector<Vertex>;
         using IndexDiagram = std::vector<std::pair<Vertex, Vertex>>;
+        using DiagramPoint = std::pair<Value, Value>;
+        using Diagram = std::vector<DiagramPoint>;
 
     public:
                     TripletMergeTree()                      {}
@@ -91,13 +93,10 @@ class TripletMergeTree
         template<class F>
         void        for_each_vertex(Vertex n, const F& f) const;
 
-        void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, bool negate);
+        void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate);
 
-        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, bool negate, bool squash_root);
-        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* values, Value epsilon, Value level_value, bool negate);
-
-        IndexDiagram noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root);
-        IndexDiagram noise_diagram_points_ls(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate);
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate, bool squash_root);
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const values, Value epsilon, Value level_value, bool negate);
 
     private:
 

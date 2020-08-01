@@ -148,13 +148,20 @@ traverse_persistence(const F& f) const
 template<class Value, class Vertex>
 void
 nesoi::TripletMergeTree<Value, Vertex>::
-compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, bool negate)
+compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const val_ptr, bool negate)
 {
     for(size_t v = 0; v < size(); ++v) {
         add(v, val_ptr[v]);
     }
-    for(const auto& e : edges) {
-        merge(std::get<0>(e), std::get<1>(e));
+    if (labels) {
+        for(const auto& e : edges) {
+            Vertex u = std::get<0>(e), v = std::get<1>(e);
+            if (labels[u] == labels[v])
+                merge(u, v);
+        }
+    } else {
+        for(const auto& e : edges)
+            merge(std::get<0>(e), std::get<1>(e));
     }
     repair();
 }
@@ -284,7 +291,7 @@ template<class Value, class Vertex>
 typename nesoi::TripletMergeTree<Value, Vertex>::
 Function
 nesoi::TripletMergeTree<Value, Vertex>::
-simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root)
+simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* labels, const Value* const val_ptr, Value epsilon, bool negate, bool squash_root)
 {
     if (squash_root && !negate) {
         std::cerr << "squash_root requirese negate=True" << std::endl;
@@ -293,7 +300,7 @@ simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Va
 
     Function simplified = function_;
 
-    compute_mt(edges, val_ptr, negate);
+    compute_mt(edges, labels, val_ptr, negate);
 
     cache_all_reps(epsilon, squash_root);
 
@@ -316,10 +323,10 @@ template<class Value, class Vertex>
 typename nesoi::TripletMergeTree<Value, Vertex>::
 Function
 nesoi::TripletMergeTree<Value, Vertex>::
-simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
+simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const val_ptr, Value epsilon, Value level_value, bool negate)
 {
     Function simplified = function_;
-    compute_mt(edges, val_ptr, negate);
+    compute_mt(edges, nullptr, val_ptr, negate);
     cache_all_reps(epsilon, level_value);
 
     for_each_vertex([&simplified, this](Vertex u) {
@@ -327,55 +334,4 @@ simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Va
     });
 
     return simplified;
-}
-
-
-template<class Value, class Vertex>
-typename nesoi::TripletMergeTree<Value, Vertex>::
-IndexDiagram
-nesoi::TripletMergeTree<Value, Vertex>::
-noise_diagram_points(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, bool negate, bool squash_root)
-{
-    if (squash_root && !negate) {
-        std::cerr << "squash_root requirese negate=True" << std::endl;
-        throw std::runtime_error("squash_root requires negate=True");
-    }
-
-    IndexDiagram result;
-
-    compute_mt(edges, val_ptr, negate);
-    for_each_vertex([&](Vertex u) {
-        Edge    sv = tree_[u];
-        Vertex  s = sv.through, v = sv.to;
-        bool    short_branch = fabs(value(s) - value(u)) < epsilon;
-
-        if (short_branch && (s != u || (squash_root && s == u && v == u)))
-            result.emplace_back(u, s);
-    });
-
-    return result;
-}
-
-
-template<class Value, class Vertex>
-typename nesoi::TripletMergeTree<Value, Vertex>::
-IndexDiagram
-nesoi::TripletMergeTree<Value, Vertex>::
-noise_diagram_points_ls(const std::vector<std::tuple<Vertex,Vertex>>& edges, Value* val_ptr, Value epsilon, Value level_value, bool negate)
-{
-    IndexDiagram result;
-
-    compute_mt(edges, val_ptr, negate);
-    for_each_vertex([&](Vertex u) {
-        Edge    sv = tree_[u];
-        Vertex  s = sv.through, v = sv.to;
-        Value   val_s = value(s), val_u = value(u);
-        bool    intersects_level_set = (val_s <= level_value && level_value <= val_u) || (val_u <= level_value && level_value <= val_s);
-        bool    short_branch = fabs(val_s - val_u) < epsilon;
-
-        if (s != u && intersects_level_set && short_branch)
-            result.emplace_back(u, s);
-    });
-
-    return result;
 }
