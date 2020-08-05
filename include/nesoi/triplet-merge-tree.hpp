@@ -376,3 +376,24 @@ diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* cons
 
    return diagram;
 }
+
+
+template<class Value, class Vertex>
+size_t
+nesoi::TripletMergeTree<Value, Vertex>::
+n_components(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels)
+{
+    std::vector<Value> values(size(), Value(0));
+
+    compute_mt(edges, labels, &values[0], false);
+
+    size_t result = 0;
+
+    traverse_persistence(
+            [this, &result](Vertex u, Vertex s, Vertex v)
+            {
+                result += (u == s && s == v);
+            });
+
+   return result;
+}

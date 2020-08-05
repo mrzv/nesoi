@@ -100,6 +100,7 @@ class TripletMergeTree
 
         Diagram     diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root);
         Diagram     noisy_part_of_diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate);
+        size_t      n_components(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels);
     private:
 
 
