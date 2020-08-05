@@ -150,6 +150,8 @@ void
 nesoi::TripletMergeTree<Value, Vertex>::
 compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const val_ptr, bool negate)
 {
+    set_negate(negate);
+
     for(size_t v = 0; v < size(); ++v) {
         add(v, val_ptr[v]);
     }
@@ -293,10 +295,13 @@ Function
 nesoi::TripletMergeTree<Value, Vertex>::
 simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* labels, const Value* const val_ptr, Value epsilon, bool negate, bool squash_root)
 {
+
     if (squash_root && !negate) {
-        std::cerr << "squash_root requirese negate=True" << std::endl;
+        std::cerr << "squash_root requires negate=True" << std::endl;
         throw std::runtime_error("squash_root requires negate=True");
     }
+
+    set_negate(negate);
 
     Function simplified = function_;
 
@@ -325,6 +330,8 @@ Function
 nesoi::TripletMergeTree<Value, Vertex>::
 simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const val_ptr, Value epsilon, Value level_value, bool negate)
 {
+    set_negate(negate);
+
     Function simplified = function_;
     compute_mt(edges, nullptr, val_ptr, negate);
     cache_all_reps(epsilon, level_value);
@@ -334,4 +341,38 @@ simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const
     });
 
     return simplified;
+}
+
+        //Diagram     diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate);
+        //Diagram     noisy_part_of_diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate);
+
+template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+Diagram
+nesoi::TripletMergeTree<Value, Vertex>::
+diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const val_ptr, bool negate, bool squash_root)
+{
+    if (squash_root && !negate) {
+        throw std::runtime_error("negate=false and squash_root=true");
+    }
+
+    set_negate(negate);
+    compute_mt(edges, labels, val_ptr, negate);
+
+    Diagram diagram;
+
+    Value root_death = 0;
+    if (!squash_root) {
+        root_death = negate ?  -std::numeric_limits<Value>::infinity() : std::numeric_limits<Value>::infinity();
+    }
+
+    traverse_persistence(
+            [this, &diagram, squash_root, negate, root_death](Vertex u, Vertex s, Vertex v)
+            {
+                Value birth = this->value(u);
+                Value death = (u == s) ? root_death : this->value(s);
+                diagram.emplace_back(birth, death);
+            });
+
+   return diagram;
 }

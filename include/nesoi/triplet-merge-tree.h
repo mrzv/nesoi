@@ -37,7 +37,7 @@ class TripletMergeTree
         using IndexArray   = std::vector<Vertex>;
         using IndexDiagram = std::vector<std::pair<Vertex, Vertex>>;
         using DiagramPoint = std::pair<Value, Value>;
-        using Diagram = std::vector<DiagramPoint>;
+        using Diagram      = std::vector<DiagramPoint>;
 
     public:
                     TripletMergeTree()                      {}
@@ -98,6 +98,8 @@ class TripletMergeTree
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate, bool squash_root);
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const values, Value epsilon, Value level_value, bool negate);
 
+        Diagram     diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root);
+        Diagram     noisy_part_of_diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate);
     private:
 
 

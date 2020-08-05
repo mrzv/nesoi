@@ -57,6 +57,24 @@ clusters(const PyTMT& tmt, typename PyTMT::Value k)
 }
 
 
+template<class T>
+T* get_ptr_to_pyarray(py::array_t<T> x, size_t expected_size, bool return_null_for_zero_size)
+{
+    py::buffer_info buf = x.request();
+
+    if (buf.ndim != 1)
+        throw std::runtime_error("Expected 1D array.");
+
+    if (buf.size == 0 && return_null_for_zero_size)
+        return nullptr;
+
+    if (buf.size != expected_size)
+        throw std::runtime_error("Unexpected array size.");
+
+    return (T*) (buf.ptr);
+}
+
+
 template<class Value_, class Vertex_>
 void init_tmt(py::module& m, std::string suffix)
 {
@@ -99,42 +117,28 @@ void init_tmt(py::module& m, std::string suffix)
         .def("clusters",        &clusters<PyTMT>, "k"_a, "find all clusters at the given threshold")
         .def("compute_mt",      [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate)
                                 {
-                                    tmt.set_negate(negate);
-
-                                    py::buffer_info buf_val = values.request();
-                                    if (buf_val.ndim != 1) throw std::runtime_error("Expected 1D array as values");
-                                    if (buf_val.size != tmt.size()) throw std::runtime_error("Values array size and graph size do not match.");
-
-                                    py::buffer_info buf_labels = labels.request();
-                                    if (buf_labels.ndim != 1) throw std::runtime_error("Expected 1D array as labels");
-                                    if (buf_labels.size != tmt.size() && buf_labels.size > 0) throw std::runtime_error("Label array size and graph size do not match.");
-
-                                    Value* val_ptr = (Value*) (buf_val.ptr);
-                                    int64_t* label_ptr = buf_labels.size ? (int64_t*) (buf_labels.ptr) : nullptr;
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
 
                                     tmt.compute_mt(edges, label_ptr, val_ptr, negate);
                                 }, "compute merge tree")
+        .def("diagram",         [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate, bool squash_root)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.diagram(edges, label_ptr, val_ptr, negate, squash_root);
+                                }, "compute persistence diagram")
         .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<int64_t> labels, py::array_t<Value> values, Value epsilon, bool negate, bool squash_root)
                                 {
-                                    py::buffer_info buf = values.request();
-                                    if (buf.ndim != 1) throw std::runtime_error("Expected 1D array as values");
-
-                                    py::buffer_info buf_labels = labels.request();
-                                    if (buf_labels.ndim != 1) throw std::runtime_error("Expected 1D array as labels");
-                                    if (buf_labels.size != tmt.size() && buf_labels.size > 0) throw std::runtime_error("Label array size and graph size do not match.");
-
-                                    Value* val_ptr = (Value*) (buf.ptr);
-                                    int64_t* label_ptr = buf_labels.size ? (int64_t*) (buf_labels.ptr) : nullptr;
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
 
                                     return tmt.simplify(edges, label_ptr, val_ptr, epsilon, negate, squash_root);
                                 }, "simplify function on graph")
         .def("simplify_ls",     [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, Value level_value, bool negate)
                                 {
-                                    py::buffer_info buf = values.request();
-                                    if (buf.ndim != 1) throw std::runtime_error("Expected 1D array");
-
-                                    const Value* const val_ptr = (Value*) (buf.ptr);
-
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
                                     return tmt.simplify(edges, val_ptr, epsilon, level_value, negate);
                                 }, "simplify level set of function on graph")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
