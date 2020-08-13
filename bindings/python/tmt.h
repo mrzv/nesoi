@@ -128,7 +128,7 @@ void init_tmt(py::module& m, std::string suffix)
                                     int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
 
                                     return tmt.n_components(edges, label_ptr);
-                                }, "compute persistence diagram")
+                                }, "compute number of connected components of domain")
 
         .def("diagram",         [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate, bool squash_root)
                                 {
@@ -137,6 +137,13 @@ void init_tmt(py::module& m, std::string suffix)
 
                                     return tmt.diagram(edges, label_ptr, val_ptr, negate, squash_root);
                                 }, "compute persistence diagram")
+        .def("pairings",        [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate, bool squash_root, Value epsilon)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.pairings(edges, label_ptr, val_ptr, negate, squash_root, epsilon);
+                                }, "compute persistence pairing")
         .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<int64_t> labels, py::array_t<Value> values, Value epsilon, bool negate, bool squash_root)
                                 {
                                     Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);

@@ -36,6 +36,7 @@ class TripletMergeTree
         using Tree         = std::vector<AtomicEdge>;
         using IndexArray   = std::vector<Vertex>;
         using IndexDiagram = std::vector<std::pair<Vertex, Vertex>>;
+        using Pairings     = std::tuple<IndexDiagram, IndexDiagram, IndexArray, IndexArray>;
         using DiagramPoint = std::pair<Value, Value>;
         using Diagram      = std::vector<DiagramPoint>;
 
@@ -99,8 +100,15 @@ class TripletMergeTree
         Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const values, Value epsilon, Value level_value, bool negate);
 
         Diagram     diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root);
-        Diagram     noisy_part_of_diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate);
+
         size_t      n_components(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels);
+
+        // return quadruple: noisy pairs (persistence < epsilon),
+        //                   non-noisy pairs (persistence >= epsilon),
+        //                   noisy essential simplices (if squash root: birth < epsilon, otherwise empty),
+        //                   non-noisy essential simplices (if squash root: birth >= epsilon, otherwise all essential simplices)
+        Pairings    pairings(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root, Value epsilon);
+
     private:
 
 

@@ -379,6 +379,55 @@ diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* cons
 
 
 template<class Value, class Vertex>
+typename nesoi::TripletMergeTree<Value, Vertex>::
+Pairings
+nesoi::TripletMergeTree<Value, Vertex>::
+pairings(const std::vector<std::tuple<Vertex,Vertex>>& edges,
+                      const int64_t* const labels,
+                      const Value* const val_ptr,
+                      bool negate,
+                      bool squash_root,
+                      Value epsilon)
+{
+    if (squash_root && !negate) {
+        throw std::runtime_error("negate=false and squash_root=true");
+    }
+
+    set_negate(negate);
+    compute_mt(edges, labels, val_ptr, negate);
+
+    IndexDiagram noisy_pairs, important_pairs;
+    IndexArray noisy_essential, essential;
+
+    Value root_death = 0;
+    if (!squash_root) {
+        root_death = negate ?  -std::numeric_limits<Value>::infinity() : std::numeric_limits<Value>::infinity();
+    }
+
+    traverse_persistence(
+            [this, &noisy_pairs, &important_pairs, &noisy_essential, &essential, root_death, epsilon, squash_root](Vertex u, Vertex s, Vertex v)
+            {
+                Value birth = this->value(u);
+                Value death = (u == s) ? root_death : this->value(s);
+
+                if (u == s) {
+                    // root
+                    if (squash_root && (fabs(birth-root_death) < epsilon))
+                        noisy_essential.emplace_back(u);
+                    else
+                        essential.emplace_back(u);
+                } else {
+                    if (fabs(birth - death) < epsilon)
+                        noisy_pairs.emplace_back(u, s);
+                    else
+                        important_pairs.emplace_back(u, s);
+                }
+            });
+
+   return std::make_tuple(noisy_pairs, important_pairs, noisy_essential, essential);
+}
+
+template<class Value, class Vertex>
 size_t
 nesoi::TripletMergeTree<Value, Vertex>::
 n_components(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels)
