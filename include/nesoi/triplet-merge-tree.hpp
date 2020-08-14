@@ -371,7 +371,8 @@ diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* cons
             {
                 Value birth = this->value(u);
                 Value death = (u == s) ? root_death : this->value(s);
-                diagram.emplace_back(birth, death);
+                if (birth != death)
+                    diagram.emplace_back(birth, death);
             });
 
    return diagram;
