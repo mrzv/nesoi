@@ -68,8 +68,10 @@ T* get_ptr_to_pyarray(py::array_t<T> x, size_t expected_size, bool return_null_f
     if (buf.size == 0 && return_null_for_zero_size)
         return nullptr;
 
-    if (buf.size != expected_size)
+    if (buf.size != expected_size) {
+        std::cerr << "expected size = " << expected_size << ", buf.size = " << buf.size << std::endl;
         throw std::runtime_error("Unexpected array size.");
+    }
 
     return (T*) (buf.ptr);
 }
