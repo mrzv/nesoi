@@ -270,7 +270,7 @@ simplification_repr(Vertex u, Value epsilon, bool squash_root)
     Vertex  s = sv.through, v = sv.to, result;
 
     if (u == v) {                                                // root
-        if (squash_root && value(u) <= epsilon)
+        if (squash_root && fabs(value(u)) < epsilon)
             result = dummy_vertex_2();
         else
             result = u;
