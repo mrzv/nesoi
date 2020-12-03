@@ -4,6 +4,7 @@
 
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
+#include <pybind11/numpy.h>
 namespace py = pybind11;
 
 #include <nesoi/triplet-merge-tree.h>
@@ -55,6 +56,27 @@ clusters(const PyTMT& tmt, typename PyTMT::Value k)
     return clusters;
 }
 
+
+template<class T>
+T* get_ptr_to_pyarray(py::array_t<T> x, size_t expected_size, bool return_null_for_zero_size)
+{
+    py::buffer_info buf = x.request();
+
+    if (buf.ndim != 1)
+        throw std::runtime_error("Expected 1D array.");
+
+    if (buf.size == 0 && return_null_for_zero_size)
+        return nullptr;
+
+    if (buf.size != expected_size) {
+        std::cerr << "expected size = " << expected_size << ", buf.size = " << buf.size << std::endl;
+        throw std::runtime_error("Unexpected array size.");
+    }
+
+    return (T*) (buf.ptr);
+}
+
+
 template<class Value_, class Vertex_>
 void init_tmt(py::module& m, std::string suffix)
 {
@@ -63,6 +85,7 @@ void init_tmt(py::module& m, std::string suffix)
     using PyTMT  = nesoi::TripletMergeTree<Value_, Vertex_>;
     using Vertex = typename PyTMT::Vertex;
     using Value  = typename PyTMT::Value;
+    using EdgeVector = typename std::vector<std::tuple<Vertex, Vertex>>;
 
     std::string classname = "TMT" + suffix;
     py::class_<PyTMT>(m, classname.c_str(), "triplet merge tree")
@@ -94,6 +117,47 @@ void init_tmt(py::module& m, std::string suffix)
                                             return result;
                                         },  "traverse persistence, return list of vertex triplets")
         .def("clusters",        &clusters<PyTMT>, "k"_a, "find all clusters at the given threshold")
+        .def("compute_mt",      [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    tmt.compute_mt(edges, label_ptr, val_ptr, negate);
+                                }, "compute merge tree")
+
+        .def("n_components",    [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels)
+                                {
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.n_components(edges, label_ptr);
+                                }, "compute number of connected components of domain")
+
+        .def("diagram",         [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate, bool squash_root)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.diagram(edges, label_ptr, val_ptr, negate, squash_root);
+                                }, "compute persistence diagram")
+        .def("pairings",        [](PyTMT& tmt, const EdgeVector& edges,  py::array_t<int64_t> labels,  py::array_t<Value> values, bool negate, bool squash_root, Value epsilon)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.pairings(edges, label_ptr, val_ptr, negate, squash_root, epsilon);
+                                }, "compute persistence pairing")
+        .def("simplify",        [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<int64_t> labels, py::array_t<Value> values, Value epsilon, bool negate, bool squash_root)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    int64_t* label_ptr = get_ptr_to_pyarray(labels, tmt.size(), true);
+
+                                    return tmt.simplify(edges, label_ptr, val_ptr, epsilon, negate, squash_root);
+                                }, "simplify function on graph")
+        .def("simplify_ls",     [](PyTMT& tmt,  const EdgeVector& edges, py::array_t<Value> values, Value epsilon, Value level_value, bool negate)
+                                {
+                                    Value* val_ptr = get_ptr_to_pyarray(values, tmt.size(), false);
+                                    return tmt.simplify(edges, val_ptr, epsilon, level_value, negate);
+                                }, "simplify level set of function on graph")
         .def_property_readonly("negate", &PyTMT::negate,    "indicates whether the tree follows super- or sub-levelsets")
         .def(py::pickle(
             [](const PyTMT& tmt)        // __getstate__

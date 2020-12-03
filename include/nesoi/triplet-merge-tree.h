@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <utility>
 #include <cstdint>
 #if !defined(NESOI_NO_PARALLEL)
 #include <atomic>
@@ -26,19 +27,25 @@ class TripletMergeTree
         };
 
 #if !defined(NESOI_NO_PARALLEL)
-        using AtomicEdge = std::atomic<Edge>;
+        using AtomicEdge   = std::atomic<Edge>;
 #else
-        using AtomicEdge = Edge;
+        using AtomicEdge   = Edge;
 #endif
 
-        using Function  = std::vector<Value>;
-        using Tree      = std::vector<AtomicEdge>;
+        using Function     = std::vector<Value>;
+        using Tree         = std::vector<AtomicEdge>;
+        using IndexArray   = std::vector<Vertex>;
+        using IndexDiagram = std::vector<std::pair<Vertex, Vertex>>;
+        using Pairings     = std::tuple<IndexDiagram, IndexDiagram, IndexArray, IndexArray>;
+        using DiagramPoint = std::pair<Value, Value>;
+        using Diagram      = std::vector<DiagramPoint>;
 
     public:
                     TripletMergeTree()                      {}
                     TripletMergeTree(size_t size, bool negate = false):
                         negate_(negate),
                         function_(size),
+                        cache_(size),
                         tree_(size)                         { for (auto& e : tree_) e = dummy(); }
 
         // no copy because of std::atomic<...> in tree_
@@ -87,7 +94,27 @@ class TripletMergeTree
         template<class F>
         void        for_each_vertex(Vertex n, const F& f) const;
 
+        void        compute_mt(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate);
+
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, Value epsilon, bool negate, bool squash_root);
+        Function    simplify(const std::vector<std::tuple<Vertex,Vertex>>& edges, const Value* const values, Value epsilon, Value level_value, bool negate);
+
+        Diagram     diagram(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root);
+
+        size_t      n_components(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels);
+
+        // return quadruple: noisy pairs (persistence < epsilon),
+        //                   non-noisy pairs (persistence >= epsilon),
+        //                   noisy essential simplices (if squash root: birth < epsilon, otherwise empty),
+        //                   non-noisy essential simplices (if squash root: birth >= epsilon, otherwise all essential simplices)
+        Pairings    pairings(const std::vector<std::tuple<Vertex,Vertex>>& edges, const int64_t* const labels, const Value* const values, bool negate, bool squash_root, Value epsilon);
+
     private:
+
+
+        Vertex      dummy_vertex() const                    { return static_cast<Vertex>(-1); }
+        Vertex      dummy_vertex_2() const                  { return static_cast<Vertex>(-2); }
+
         bool        compare_exchange(AtomicEdge& e, AtomicEdge expected, AtomicEdge desired)
         {
 #if !defined(NESOI_NO_PARALLEL)
@@ -100,9 +127,17 @@ class TripletMergeTree
 #endif
         }
 
+        void        cache_all_reps(Value epsilon, bool squash_root);
+        void        cache_all_reps(Value epsilon, Value level_value);
+        Vertex      simplification_repr(Vertex u, Value epsilon, bool squash_root);
+        void        cache_simplification_repr(Vertex u, Value epsilon, Value level_value);
+
+
+
     private:
         bool        negate_;
         Function    function_;
+        IndexArray  cache_;
         Tree        tree_;
 };
 
