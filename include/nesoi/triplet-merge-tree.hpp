@@ -1,3 +1,4 @@
+#include <iostream>     // for std::cerr
 #include "parallel.h"
 
 template<class Value, class Vertex>
