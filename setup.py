@@ -12,7 +12,8 @@ from distutils.version import LooseVersion
 # sys.path.append(os.path.dirname(os.path.abspath(sys.argv[0])) + '/bindings/python/nesoi')
 # from _version import __version__
 # sys.path.pop()
-__version__ = 'dev'
+# __version__ = 'dev'
+__version__ = '0.1.0'
 
 # with open('README.rst') as long_description_file:
 #     long_description = long_description_file.read()
